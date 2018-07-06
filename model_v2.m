@@ -76,7 +76,7 @@ COPz = [parameters(24),parameters(25),parameters(26)]; % x,y of top face COP
 
 % Thrusters
 d100 = [parameters(30),parameters(31),parameters(32)]; %x,y,z of starboard T200
-d200 = [parameters(27),parameters(28),parameters(29)]; %x,y,z of starboard T100
+d200 = [parqameters(27),parameters(28),parameters(29)]; %x,y,z of starboard T100
 theta100 = 45; %deg
 K1_T = parameters(33); %linearized constant converting PWM in to Torque and Thrust out for the T100
 K1_F = parameters(34);
@@ -156,7 +156,7 @@ A = [[0  0   0   0                0             0   1           0           0   
      [0  0   0   0                0             0   -bx         0           0           0   0    0]/m;   ... % ax
      [0  0   0   0                0             0   0          -by          0           0   0    0]/m;   ... % ay
      [0  0   0   0                0             0   0           0          -bz          0   0    0]/m;   ... % az
-     [0  0   0  -B*d_f_B+W*d_f_M  0             0   0          -by*COPy(z)  bz*COPz(y) -cx  0    0]/Ix;  ... % alphax
+     [0  0   0  -B*d_f_B+W*d_f_M  0             0   0            bz*COPz(y) -cx  0    0]/Ix;  ... % alphax
      [0  0   0   0            -B*d_r_B+W*d_r_M  0   bx*COPx(z)  0          -bz*COPz(y)  0  -cy   0]/Iy;  ... % alphay
      [0  0   0   0                0             0  -bx*COPx(y)  by*COPy(z)  0           0   0   -cz]/Iz];    % alphaz
 %vars to simplify B matrix
