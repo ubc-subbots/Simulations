@@ -1,5 +1,5 @@
 %% 2018 Subbots Underactuated Vehicle Model
-clear
+clc
 
 %% Parameters:
 %defining indices
@@ -210,18 +210,40 @@ C = [[0  0   0   0   0   0   1   0   0   0   0   0];
  D = zeros(6,4);
  
 %% LQI
-%Q = diag([0.10 0.1 0.1 0.1 0.1 0.1 100 100 100 0.1 0.1 100]);         % increases penalty as value increases, reaches target position/velocity quicker
-%R = diag([0.1 0.1 0.2 0.2]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
-Q = eye(18);
-R = eye(4);
-N = eye(18,4);
+%Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
+Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 3 22 3 3 3 3]*1);  
+R = diag([1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
+%Q = 3*eye(18);
+%R = eye(4);
+N = eye(18,4)*1;
+%N = zeros(18,4); %default lqi
 % eig([Q N;N' R])
 sys = ss(A,B,C,D);
 [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
 %A = (A -B*k);
  eig([Q N;N' R])
+ 
  %% Simulink Model
+%  for test = 1:18    
+%  Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3]*1);
+%  meme = 1;
+%  for c =1 :100
+%     Q(test,test) = c;
+%     try
+%        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
+%     catch 
+%         a = "did not work"
+%         continue
+%     end
+%     QQ(meme,test) = c;
+%     meme = meme +1;
+%  end
+%  
+%  end
+ 
+ 
  
  %K=0.1*ones(4,18);%temp standin
+ stepinput = [0  1 0 0 0 0];
  sim('model_sim')
  
