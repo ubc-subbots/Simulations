@@ -211,7 +211,7 @@ C = [[0  0   0   0   0   0   1   0   0   0   0   0];
  
 %% LQI
 %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
-Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 3 22 3 3 3 3]*1);  
+Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 99 3 3 3 3]*1);  
 R = diag([1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
 %Q = 3*eye(18);
 %R = eye(4);
@@ -219,13 +219,16 @@ N = eye(18,4)*1;
 %N = zeros(18,4); %default lqi
 % eig([Q N;N' R])
 sys = ss(A,B,C,D);
+Ts = 0.00002;
+sys = c2d(sys,Ts);
 [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
 %A = (A -B*k);
  eig([Q N;N' R])
  
- %% Simulink Model
+ % Simulink Model
+%  Q = 0;
 %  for test = 1:18    
-%  Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3]*1);
+%   Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 3]*1);
 %  meme = 1;
 %  for c =1 :100
 %     Q(test,test) = c;
@@ -236,6 +239,27 @@ sys = ss(A,B,C,D);
 %         continue
 %     end
 %     QQ(meme,test) = c;
+%     meme = meme +1;
+%  end
+%  
+%  end
+%  
+% 
+%  
+%
+% RR = 0
+%  for test = 1:4    
+%  R = diag([1 100 1 1]);
+%  meme = 1;
+%  for c =1 :100
+%     R(test,test) = c
+%     try
+%        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
+%     catch 
+%         a = "did not work"
+%         continue
+%     end
+%     RR(meme,test) = c;
 %     meme = meme +1;
 %  end
 %  
