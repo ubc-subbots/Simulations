@@ -211,7 +211,7 @@ C = [[0  0   0   0   0   0   1   0   0   0   0   0];
  
 %% LQI
 %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
-Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 99 3 3 3 3]*1);  
+Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 9]*1);  
 R = diag([1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
 %Q = 3*eye(18);
 %R = eye(4);
@@ -219,7 +219,7 @@ N = eye(18,4)*1;
 %N = zeros(18,4); %default lqi
 % eig([Q N;N' R])
 sys = ss(A,B,C,D);
-Ts = 0.00002;
+Ts = 0.2;
 sys = c2d(sys,Ts);
 [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
 %A = (A -B*k);
@@ -243,7 +243,7 @@ sys = c2d(sys,Ts);
 %  end
 %  
 %  end
-%  
+ 
 % 
 %  
 %
@@ -264,10 +264,10 @@ sys = c2d(sys,Ts);
 %  end
 %  
 %  end
- 
+ d
  
  
  %K=0.1*ones(4,18);%temp standin
- stepinput = [0  1 0 0 0 0];
+ stepinput = [1 0 0 0 0 0];
  sim('model_sim')
  
