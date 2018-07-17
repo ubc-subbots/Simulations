@@ -78,11 +78,17 @@ COPz = [parameters(24),parameters(25),parameters(26)]; % x,y of top face COP
 d100 = [parameters(30),parameters(31),parameters(32)]; %x,y,z of starboard T200
 d200 = [parameters(27),parameters(28),parameters(29)]; %x,y,z of starboard T100
 theta100 = 45; %deg
-K1_T = parameters(33); %linearized constant converting PWM in to Torque and Thrust out for the T100
-K1_F = parameters(34);
-K2_T = parameters(35); %again for the T200
-K2_F = parameters(36);
+%K1_T = parameters(33); %linearized constant converting PWM in to Torque and Thrust out for the T100
+%K1_F = parameters(34);
+%K2_T = parameters(35); %again for the T200
+%K2_F = parameters(36);
 
+% using torque values directly insread of converting PWM to torque, will do
+% the conversion in software
+K1_T = 1; %linearized constant converting PWM in to Torque and Thrust out for the T100
+K1_F = 1;
+K2_T = 1; %again for the T200
+K2_F = 1;
 
 %% Force Balance Equations written in plain text
 
@@ -211,7 +217,9 @@ C = [[0  0   0   0   0   0   1   0   0   0   0   0];
  
 %% LQI
 %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
-Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 9]*1);  
+%Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
+%Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 46 72 8 3 3 30]*1);  
+  Q= diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1);  
 R = diag([1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
 %Q = 3*eye(18);
 %R = eye(4);
@@ -219,16 +227,16 @@ N = eye(18,4)*1;
 %N = zeros(18,4); %default lqi
 % eig([Q N;N' R])
 sys = ss(A,B,C,D);
-Ts = 0.2;
+Ts = 0.04;
 sys = c2d(sys,Ts);
 [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
 %A = (A -B*k);
- eig([Q N;N' R])
+ eig([Q N;N' R]);
  
  % Simulink Model
 %  Q = 0;
 %  for test = 1:18    
-%   Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 3]*1);
+%   Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1); 
 %  meme = 1;
 %  for c =1 :100
 %     Q(test,test) = c;
@@ -264,10 +272,10 @@ sys = c2d(sys,Ts);
 %  end
 %  
 %  end
- d
+ 
  
  
  %K=0.1*ones(4,18);%temp standin
- stepinput = [1 0 0 0 0 0];
+ stepinput = [0 0 0 0 0 1];
  sim('model_sim')
  
