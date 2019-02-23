@@ -35,6 +35,13 @@ COPy = [0.01,0,0.01]; % x,z of right face COP
 COPz = [0.01,0.01,0]; % x,y of top face COP
 
 % Thrusters
+dpf = [1, 1, 0];
+dsf = [1, -1, 0];
+dpb = [-1, 1, 0];
+dsb = [-1, -1, 0];
+dl = [0, 1, 0];
+dr = [0, -1, 0];
+
 d100 = [0,.3,-.2]; %x,y,z of starboard T200
 d200 = [0,.3, .2]; %x,y,z of starboard T100
 theta100 = 45; %deg
@@ -77,7 +84,7 @@ COPz = [parameters(24),parameters(25),parameters(26)]; % x,y of top face COP
 % Thrusters
 d100 = [parameters(30),parameters(31),parameters(32)]; %x,y,z of starboard T200
 d200 = [parameters(27),parameters(28),parameters(29)]; %x,y,z of starboard T100
-theta100 = 45; %deg
+theta100 = pi/4; % rad
 %K1_T = parameters(33); %linearized constant converting PWM in to Torque and Thrust out for the T100
 %K1_F = parameters(34);
 %K2_T = parameters(35); %again for the T200
@@ -149,7 +156,9 @@ d_r_M = sqrt(COM(x)^2+COM(z)^2); % distance between origin and COM in Right Plan
 
 
 % x = [x,y,z,theta_x, theta_y, theta_z, vx, vy, vz, wx, wy, wz] %, ax, ay, az, alphax, alphay, alphaz]
-% u = [PWMs, PWMp, PMWr, PWMl, W, B]
+% u = [PWMsf, PWMpf, PWMsb, PMWpb, PWMsu, PWMpu, C, W, B]
+% C is the y-intercept of the linear best fit line of thrust vs PWM input
+% curve from Bluestar T100 technical data
 % y = [vx, vy, vz, wx, wy, wz]
 % dx/dt = Ax + Bu
 %     x  y   z   tx            ty            tz  vx          vy          vz          wx  wy  wz
@@ -166,27 +175,61 @@ A = [[0  0   0   0                0             0   1           0           0   
      [0  0   0   0            -B*d_r_B+W*d_r_M  0   bx*COPx(z)  0          -bz*COPz(y)  0  -cy   0]/Iy;  ... % alphay
      [0  0   0   0                0             0  -bx*COPx(y)  by*COPy(z)  0           0   0   -cz]/Iz];    % alphaz
 %vars to simplify B matrix
+% ax = (K1F * PWM - 117.65)*cos(theta)/m
+% aypf = aysb = (K1F * PWMpf - 117.65)*sin(theta)/m
+% aypb = aysf = - (K1F * PWMpb - 117.65)*sin(theta)/m
+% az = (K1F * PWM - 117.65)/m
+
+X = cos(theta100);
+Y = sin(theta100); %keeping the thruster forces clean
+Z = 1;
+
+% Unit vectors of distances for torque equations for the motors 
+Tx_sf = X*dsf(y);
+Tx_pf = X*dpf(y);
+Tx_sb = X*dsb(y);
+Tx_pb = X*dpb(y);
+
+Ty_sf = Y*dsf(x);
+Ty_pf = -Y*dsf(x); 
+Ty_sb = -Y*dsf(x);
+Ty_pb = Y*dpb(x);
+
+T_sf = Tx_sf + Ty_sf;
+T_pf = Tx_pf + Ty_pf;
+T_sb = Tx_sb + Ty_sb;
+T_pb = Tx_pb + Ty_pb;
+
+z_l = Z*dl(y);
+z_r = Z*dr(y);
+
 kappa = sqrt(2)/2*K1_F*(d100(y)-d100(z));
 beta = theta_x_0*d_f_0;
 nu = sqrt(2)/2*K1_T;
 zu = K2_F*d200(z);
 yu = K2_F*d200(y);
 rho = theta_y_0*d_r_0;
+
+
+
+% Input matrix consists of force supplied to the motors
+% Assuming that the bot can roll, NOT pitch
+
+%     Fsf   Fpf    Fsb    Fpb    Fsu    Fpu  
+B = [[0      0      0      0      0      0             ];                  ... % vx
+     [0      0      0      0      0      0             ];                  ... % vy
+     [0      0      0      0      0      0             ];                  ... % vz
+     [0      0      0      0      0      0             ];                  ... % wx
+     [0      0      0      0      0      0             ];                  ... % wy
+     [0      0      0      0      0      0             ];                  ... % wz
+     [X      X      X      X      0      0             ]/m;           ... % ax
+     [Y      -Y     -Y     Y      0      0             ]/m;           ... % ay
+     [0      0      0      0      Z      Z             ]/m;           ... % az
+     [0      0      0      0     z_l    z_r            ]/Ix;               ... % alphax
+     [0      0      0      0      0      0             ]/Iy;               ... % alphay
+     [T_sf  T_pf   T_sb   T_pb    0      0             ]/Iz];                  % alphaz
  
-Y = sqrt(2)/2*K1_F; %keeping the thruster forces clean
-%     PWMs   PWMp   PWMr   PWMl   
-B = [[0      0      0      0     ];                  ... % vx
-     [0      0      0      0     ];                  ... % vy
-     [0      0      0      0     ];                  ... % vz
-     [0      0      0      0     ];                  ... % wx
-     [0      0      0      0     ];                  ... % wy
-     [0      0      0      0     ];                  ... % wz
-     [1      1      0      0     ]*K2_F/m;           ... % ax
-     [0      0      Y     -Y     ]/m;                ... % ay
-     [0      0      Y      Y     ]/m;                ... % az
-     [K2_T  -K2_T  -kappa  kappa ]/Ix;               ... % alphax
-     [zu     zu     nu     nu    ]/Iy;               ... % alphay
-     [yu    -yu     nu    -nu    ]/Iz];                  % alphaz
+
 %%Removing Gravity and Buoyancy as input forces. Will assume that sub will
 %%be trimmed enough that theta_0 ~= 0 and will treat buoyancy/weight
 %%differential as a disturbance force <- controller should naturally
@@ -213,26 +256,28 @@ C = [[0  0   0   0   0   0   1   0   0   0   0   0];
      [0  0   0   0   0   0   0   0   0   0   1   0];
      [0  0   0   0   0   0   0   0   0   0   0   1]];
  
- D = zeros(6,4);
+ D = zeros(6,6);
  
 %% LQI
 %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
 %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
 %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 46 72 8 3 3 30]*1);  
-  Q= diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1);  
-R = diag([1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
+Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1);  
+R = diag([1 1 1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
 %Q = 3*eye(18);
 %R = eye(4);
-N = eye(18,4)*1;
+N = eye(18,6)*1;
 %N = zeros(18,4); %default lqi
 % eig([Q N;N' R])
 sys = ss(A,B,C,D);
 Ts = 0.04;
 sys = c2d(sys,Ts);
-[K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
+
 %A = (A -B*k);
- eig([Q N;N' R]);
- 
+eig([Q N;N' R])
+[K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
+
+
  % Simulink Model
 %  Q = 0;
 %  for test = 1:18    
