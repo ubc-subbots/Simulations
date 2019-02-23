@@ -55,9 +55,11 @@ K2_F = 4;
 
 %% Importing Parameters
 
-filename = 'parameters.xlsx';
+filename = 'parameters2.xlsx';
+rho = 1000;
+g = -9.81; %m/s^2
 sheet = 1;
-xlRange = 'D1:D36';
+xlRange = 'D1:D42';
 parameters = xlsread(filename,sheet,xlRange);
 
 
@@ -98,6 +100,39 @@ K1_T = 1; %linearized constant converting PWM in to Torque and Thrust out for th
 K1_F = 1;
 K2_T = 1; %again for the T200
 K2_F = 1;
+
+Ap_x = parameters(37);
+Ap_y = parameters(38);
+Ap_z = parameters(39);
+
+Dim_x = parameters(40)*(10^-3);
+Dim_y = parameters(41)*(10^-3);
+Dim_z = parameters(42)*(10^-3);
+
+% Predetermined Constants
+ratios = [1,2,3,4,5,6,7,10];
+C_A = [0.68, 0.36, 0.24, 0.19, 0.15, 0.13, 0.11, 0.09];
+
+% Calculate Ma_y (Thin Rectangle) V_R = (PI/4)a^2 b where b>a
+dim_ratio_y = (Dim_x/Dim_z);
+C_Ay = interp1(ratios, C_A, dim_ratio_y);
+V_Ry = pi/4*(Dim_z^2)*Dim_x;
+Ratio_y = Ap_y/(Dim_z*Dim_y);
+Ma_y = rho*C_Ay*V_Ry*Ratio_y;
+
+% Calculate Ma_z (Thin Rectangle) 
+dim_ratio_z = (Dim_x/Dim_y);
+C_Az = interp1(ratios, C_A, dim_ratio_z)
+V_Rz = pi/4*(Dim_y^2)*Dim_x;
+Ratio_z = Ap_z/(Dim_y*Dim_x);
+Ma_z = rho*C_Ay*Ap_y*Dim_y;
+
+% Calculate Ma_x (Rectangular Prism) V_R = a^2 b where b>a
+dim_ratio_x = (Dim_x/(0.5*(Dim_y+Dim_z)));
+C_Ax = interp1(ratios, C_A, dim_ratio_x);
+V_Rx = Dim_x*((0.5*(Dim_y+Dim_z))^2);
+Ratio_x = Ap_x/(Dim_y*Dim_z);
+Ma_x = rho*C_Ax*V_Rx*Ratio_x;
 
 %% Force Balance Equations written in plain text
 
