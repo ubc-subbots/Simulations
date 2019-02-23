@@ -1,5 +1,7 @@
 %% 2018 Subbots Underactuated Vehicle Model
-clc
+clc;
+clear;
+close all;
 
 %% Parameters:
 %defining indices
@@ -200,8 +202,8 @@ T_pf = Tx_pf + Ty_pf;
 T_sb = Tx_sb + Ty_sb;
 T_pb = Tx_pb + Ty_pb;
 
-z_l = Z*dl(y);
-z_r = Z*dr(y);
+T_l = Z*dl(y);
+T_r = Z*dr(y);
 
 kappa = sqrt(2)/2*K1_F*(d100(y)-d100(z));
 beta = theta_x_0*d_f_0;
@@ -225,8 +227,8 @@ B = [[0      0      0      0      0      0             ];                  ... %
      [X      X      X      X      0      0             ]/m;           ... % ax
      [Y      -Y     -Y     Y      0      0             ]/m;           ... % ay
      [0      0      0      0      Z      Z             ]/m;           ... % az
-     [0      0      0      0     z_l    z_r            ]/Ix;               ... % alphax
-     [0      0      0      0      0      0             ]/Iy;               ... % alphay
+     [0      0      0      0     T_l    T_r            ]/Ix;               ... % alphax
+     [1      0     0       0      0      0             ]/Iy;               ... % alphay
      [T_sf  T_pf   T_sb   T_pb    0      0             ]/Iz];                  % alphaz
  
 
@@ -258,6 +260,8 @@ C = [[0  0   0   0   0   0   1   0   0   0   0   0];
  
  D = zeros(6,6);
  
+
+ 
 %% LQI
 %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
 %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
@@ -273,12 +277,20 @@ sys = ss(A,B,C,D);
 Ts = 0.04;
 sys = c2d(sys,Ts);
 
+% Minimum realization
+[Gmin,P] = minreal(sys);
+rank(ctrb(Gmin.a, Gmin.b))
+rank(obsv(Gmin.a, Gmin.c))
+
+% Lyapunov Equation
+% lyapunov = dlyap(Gmin.a,Gmin.b,Gmin.c)
+
 %A = (A -B*k);
 eig([Q N;N' R])
 [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
 
 
- % Simulink Model
+% Simulink Model
 %  Q = 0;
 %  for test = 1:18    
 %   Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1); 
