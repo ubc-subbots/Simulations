@@ -134,6 +134,23 @@ V_Rx = Dim_x*((0.5*(Dim_y+Dim_z))^2);
 Ratio_x = Ap_x/(Dim_y*Dim_z);
 Ma_x = rho*C_Ax*V_Rx*Ratio_x;
 
+M_x = Ma_x + m;
+M_y = Ma_y + m;
+M_z = Ma_z + m;
+B_x = 0.3;
+B_y = 0.3;
+B_z = 0.3;
+
+%% PID System Analysis
+
+s = tf('s');
+G_x = 1/(M_x*s+B_x);
+C_x = 1000 + 5/s;
+G_ol = C_x*G_x;
+
+bode(G_ol);
+margin(G_ol)
+
 %% Force Balance Equations written in plain text
 
 %%%% NOTE: In an effort to keep things more linear, a simplification is made
@@ -247,8 +264,6 @@ zu = K2_F*d200(z);
 yu = K2_F*d200(y);
 rho = theta_y_0*d_r_0;
 
-
-
 % Input matrix consists of force supplied to the motors
 % Assuming that the bot can roll, NOT pitch
 
@@ -263,7 +278,7 @@ B = [[0      0      0      0      0      0             ];                  ... %
      [Y      -Y     -Y     Y      0      0             ]/m;           ... % ay
      [0      0      0      0      Z      Z             ]/m;           ... % az
      [0      0      0      0     T_l    T_r            ]/Ix;               ... % alphax
-     [1      0     0       0      0      0             ]/Iy;               ... % alphay
+     [1      0     0       0      0      0             ]/Iy;               ... % alphay TODO - Remove 1
      [T_sf  T_pf   T_sb   T_pb    0      0             ]/Iz];                  % alphaz
  
 
