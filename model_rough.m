@@ -32,9 +32,9 @@ parameters = xlsread(filename,sheet,xlRange);
 m = parameters(1); % sub mass measured using hanging scale in air
 W = m*g;
 COM = [parameters(6),parameters(7),parameters(8)];
-Ix = parameters(2); %inertia about the COM + parallel axis theorem to take all inertias about geometric center
-Iy = parameters(3);
-Iz = parameters(4);
+I_x = parameters(2); %inertia about the COM + parallel axis theorem to take all inertias about geometric center
+I_y = parameters(3);
+I_z = parameters(4);
 
 % Buoyancy
 %B = parameters(5); %%%
@@ -126,8 +126,8 @@ B = zeros(5,6);
 B(1,:) = [cosd(45) cosd(45) cosd(45) cosd(45) 0 0];
 B(2,:) = [cosd(45) -cosd(45) -cosd(45) cosd(45) 0 0];
 B(3,:) = [ 0 0 0 0 1 1];
-B(4,:) = [ 0 0 0 0 -L_sides L_sides];
-B(5,:) = [-L_diags L_diags L_diags -L_diags 0 0];
+B(4,:) = [ 0 0 0 0 L_sides -L_sides];
+B(5,:) = [L_diags -L_diags L_diags -L_diags 0 0];
 B_inv = pinv(B);
 
 %% PID Block Diagram
