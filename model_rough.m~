@@ -139,45 +139,28 @@ M_z = m + Ma_z;
 
 run('PID_control');
 
-close all;
-clc;
 figure();
 
 subplot(5,1,1);
 plot(simout.Time, simout.Data(:,1));
 title('X');
-xtime = stepinfo(simout.Data(:,1), simout.Time);
-xerr = xtime.SettlingMin;
-xtime = xtime.SettlingTime;
+xtime = stepinfo(simout.Data(:,1), simout.Time).SettlingTime;
 
 subplot(5,1,2);
 plot(simout.Time, simout.Data(:,2));
 title('Y');
-ytime = stepinfo(simout.Data(:,2), simout.Time);
-yerr = ytime.SettlingMin;
-ytime = ytime.SettlingTime;
 
 subplot(5,1,3);
 plot(simout.Time, simout.Data(:,3));
 title('Z');
-ztime = stepinfo(simout.Data(:,3), simout.Time);
-zerr = ztime.SettlingMin;
-ztime = ztime.SettlingTime;
 
 subplot(5,1,4);
 plot(simout.Time, simout.Data(:,4));
 title('TX');
-txtime = stepinfo(simout.Data(:,4), simout.Time);
-txerr = txtime.SettlingMin
-txtime = txtime.SettlingTime
-
 
 subplot(5,1,5);
 plot(simout.Time, simout.Data(:,5));
 title('TZ');
-tztime = stepinfo(simout.Data(:,5), simout.Time);
-tzerr = tztime.SettlingMin
-tztime = tztime.SettlingTime
 
 %% Analysis PT1 Stability, Controllability, Observability
 clc;
