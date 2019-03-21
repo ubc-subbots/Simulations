@@ -162,9 +162,9 @@ A = [[0  0   0   0                0             0   1           0           0   
      [0  0   0   0                0             0   -bx         0           0           0   0    0]/m;   ... % ax
      [0  0   0   0                0             0   0          -by          0           0   0    0]/m;   ... % ay
      [0  0   0   0                0             0   0           0          -bz          0   0    0]/m;   ... % az
-     [0  0   0  -B*d_f_B+W*d_f_M  0             0   0          -by*COPy(z)  bz*COPz(y) -cx  0    0]/Ix;  ... % alphax
-     [0  0   0   0            -B*d_r_B+W*d_r_M  0   bx*COPx(z)  0          -bz*COPz(y)  0  -cy   0]/Iy;  ... % alphay
-     [0  0   0   0                0             0  -bx*COPx(y)  by*COPy(z)  0           0   0   -cz]/Iz];    % alphaz
+     [0  0   0  -B*d_f_B+W*d_f_M  0             0   0          -by*COPy(z)  -bz*COPz(y) -cx  0    0]/Ix;  ... % alphax
+     [0  0   0   0            -B*d_r_B+W*d_r_M  0   -bx*COPx(z)  0          -bz*COPz(y)  0  -cy   0]/Iy;  ... % alphay
+     [0  0   0   0                0             0  -bx*COPx(y)  -by*COPy(z)  0           0   0   -cz]/Iz];    % alphaz
 %vars to simplify B matrix
 kappa = sqrt(2)/2*K1_F*(d100(y)-d100(z));
 beta = theta_x_0*d_f_0;

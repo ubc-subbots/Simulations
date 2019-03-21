@@ -116,8 +116,8 @@ A = zeros(5,5);
 A(1,1) = B_x/(m+Ma_x);
 A(2,2) = B_y/(m+Ma_y);
 A(3,3) = B_z/(m+Ma_z);
-A(4,4) = B_tx/(Ix);
-A(5,5) = B_tz/(Iz);
+A(4,4) = B_tx/(I_x);
+A(5,5) = B_tz/(I_z);
 
 L_diags = 0.48; 
 L_sides = 0.21;
