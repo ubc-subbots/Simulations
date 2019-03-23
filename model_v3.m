@@ -215,19 +215,15 @@ d_r_M = sqrt(COM(x)^2+COM(z)^2); % distance between origin and COM in Right Plan
 % curve from Bluestar T100 technical data
 % y = [vx, vy, vz, wx, wy, wz]
 % dx/dt = Ax + Bu
-%     x  y   z   tx            ty            tz  vx          vy          vz          wx  wy  wz
-A = [[0  0   0   0                0             0   1           0           0           0   0    0];     ... % vx
-     [0  0   0   0                0             0   0           1           0           0   0    0];     ... % vy
-     [0  0   0   0                0             0   0           0           1           0   0    0];     ... % vz
-     [0  0   0   0                0             0   0           0           0           1   0    0];     ... % wx
-     [0  0   0   0                0             0   0           0           0           0   1    0];     ... % wy
-     [0  0   0   0                0             0   0           0           0           0   0    1];     ... % wz
-     [0  0   0   0                0             0   -bx         0           0           0   0    0]/m;   ... % ax
-     [0  0   0   0                0             0   0          -by          0           0   0    0]/m;   ... % ay
-     [0  0   0   0                0             0   0           0          -bz          0   0    0]/m;   ... % az
-     [0  0   0  -B*d_f_B+W*d_f_M  0             0   0          -by*COPy(z)  bz*COPz(y) -cx  0    0]/Ix;  ... % alphax
-     [0  0   0   0            -B*d_r_B+W*d_r_M  0   bx*COPx(z)  0          -bz*COPz(y)  0  -cy   0]/Iy;  ... % alphay
-     [0  0   0   0                0             0  -bx*COPx(y)  by*COPy(z)  0           0   0   -cz]/Iz];    % alphaz
+%        z   tx                   tz  vx          vy          vz          wx    wz
+A = [[   0   0                     0   0           0           1           0       0];     ... % vz
+     [   0   0                     0   0           0           0           1       0];     ... % wx
+     [   0   0                     0   0           0           0           0       1];     ... % wz
+     [   0   0                     0   -bx         0           0           0       0]/m;   ... % ax
+     [   0   0                     0   0          -by          0           0       0]/m;   ... % ay
+     [   0   0                     0   0           0          -bz          0       0]/m;   ... % az
+     [   0  -B*d_f_B+W*d_f_M       0   0          -by*COPy(z)  bz*COPz(y) -cx      0]/Ix;  ... % alphax
+     [   0   0                     0  -bx*COPx(y)  by*COPy(z)  0           0     -cz]/Iz];    % alphaz
 %vars to simplify B matrix
 % ax = (K1F * PWM - 117.65)*cos(theta)/m
 % aypf = aysb = (K1F * PWMpf - 117.65)*sin(theta)/m
