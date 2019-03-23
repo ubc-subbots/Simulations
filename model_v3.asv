@@ -221,14 +221,6 @@ A = [[   0   0                     0   0           0           1           0    
 
 %% Thruster (B) Matrix
 
-% Thruster Locations
-dpf = [1, 1, 0]*0.25;    % Top left
-dsf = [1, -1, 0]*0.25;   % Top right
-dpb = [-1, 1, 0]*0.25;   % Bottom left
-dsb = [-1, -1, 0]*0.25;  % Bottom right
-dl = [0, 2, 0]*0.25;     % left
-dr = [0, -2, 0]*0.25;    % right
-
 X = cos(theta100);
 Y = sin(theta100); %keeping the thruster forces clean
 Z = 1;
@@ -297,50 +289,76 @@ C = [[0   0   0   1   0   0   0   0];
 % return; % Comment out if using LQR
  
 %% LQI
-% %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
-% %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
-% %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 46 72 8 3 3 30]*1);  
-% Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44]*1);  
-% R = diag([1 1 1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
-% %Q = 3*eye(18);
-% %R = eye(4);
-% N = eye(13,6)*1;
-% %N = zeros(18,4); %default lqi
-% % eig([Q N;N' R])
-% sys = ss(A,B,C,D);
-% Ts = 0.04;
-% sys = c2d(sys,Ts);
-% 
-% % Minimum realization
-% [Gmin,P] = minreal(sys);
-% rank(ctrb(Gmin.a, Gmin.b))
-% rank(obsv(Gmin.a, Gmin.c))
-% sys_min = ss(Gmin.a,Gmin.b,Gmin.c,Gmin.d);
-% sys_min = c2d(sys_min,Ts);
-% 
-% % Lyapunov Equation
-% % lyapunov = dlyap(Gmin.a,Gmin.b,Gmin.c)
-% 
-% %A = (A -B*k);
-% eig([Q N;N' R])
-% [K,S,E] = lqi(sys_min,Q,R,N); %lqr(A,B,Q,R);
-
-
-%% LQR
-Q = diag([3 3 3 3 3 3 3 3]*1);  
-% Q = zeros(14,14);
+%Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
+%Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
+%Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 46 72 8 3 3 30]*1);  
+Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76]*1);  
 R = diag([1 1 1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
 %Q = 3*eye(18);
 %R = eye(4);
-N = eye(13,6)*1;
+N = eye(14,6)*1;
 %N = zeros(18,4); %default lqi
 % eig([Q N;N' R])
 sys = ss(A,B,C,D);
 Ts = 0.04;
 sys = c2d(sys,Ts);
-[K,S,E] = lqr(A, B, Q,R);
+
+% Minimum realization
+[Gmin,P] = minreal(sys);
+rank(ctrb(Gmin.a, Gmin.b))
+rank(obsv(Gmin.a, Gmin.c))
+
+% Lyapunov Equation
+% lyapunov = dlyap(Gmin.a,Gmin.b,Gmin.c)
+
+%A = (A -B*k);
+eig([Q N;N' R])
+[K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
 
 
-%  stepinput = [0 0 0 0 0 1];
-%  sim('model_sim')
+% Simulink Model
+%  Q = 0;
+%  for test = 1:18    
+%   Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1); 
+%  meme = 1;
+%  for c =1 :100
+%     Q(test,test) = c;
+%     try
+%        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
+%     catch 
+%         a = "did not work"
+%         continue
+%     end
+%     QQ(meme,test) = c;
+%     meme = meme +1;
+%  end
+%  
+%  end
+ 
+% 
+%  
+%
+% RR = 0
+%  for test = 1:4    
+%  R = diag([1 100 1 1]);
+%  meme = 1;
+%  for c =1 :100
+%     R(test,test) = c
+%     try
+%        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
+%     catch 
+%         a = "did not work"
+%         continue
+%     end
+%     RR(meme,test) = c;
+%     meme = meme +1;
+%  end
+%  
+%  end
+ 
+ 
+ 
+ %K=0.1*ones(4,18);%temp standin
+ stepinput = [0 0 0 0 0 1];
+ sim('model_sim')
  
