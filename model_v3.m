@@ -1,4 +1,4 @@
-%% 2018 Subbots Underactuated Vehicle Model
+%% 2019 Subbots Underactuated Vehicle Model
 clc;
 clear;
 close all;
@@ -215,7 +215,7 @@ d_r_M = sqrt(COM(x)^2+COM(z)^2); % distance between origin and COM in Right Plan
 % curve from Bluestar T100 technical data
 % y = [vx, vy, vz, wx, wy, wz]
 % dx/dt = Ax + Bu
-%        z   tx                   tz  vx          vy          vz          wx    wz
+%        z   tx                   tz  vx          vy          vz          wx       wz
 A = [[   0   0                     0   0           0           1           0       0];     ... % vz
      [   0   0                     0   0           0           0           1       0];     ... % wx
      [   0   0                     0   0           0           0           0       1];     ... % wz
@@ -264,121 +264,108 @@ rho = theta_y_0*d_r_0;
 % Assuming that the bot can roll, NOT pitch
 
 %     Fsf   Fpf    Fsb    Fpb    Fsu    Fpu  
-B = [[0      0      0      0      0      0             ];                  ... % vx
-     [0      0      0      0      0      0             ];                  ... % vy
-     [0      0      0      0      0      0             ];                  ... % vz
-     [0      0      0      0      0      0             ];                  ... % wx
-     [0      0      0      0      0      0             ];                  ... % wy
-     [0      0      0      0      0      0             ];                  ... % wz
+B = [[0      0      0      0      0      0             ];             ... % vz
+     [0      0      0      0      0      0             ];             ... % wx
+     [0      0      0      0      0      0             ];             ... % wz
      [X      X      X      X      0      0             ]/m;           ... % ax
      [Y      -Y     -Y     Y      0      0             ]/m;           ... % ay
      [0      0      0      0      Z      Z             ]/m;           ... % az
-     [0      0      0      0     T_l    T_r            ]/Ix;               ... % alphax
-     [1      0     0       0      0      0             ]/Iy;               ... % alphay TODO - Remove 1
-     [T_sf  T_pf   T_sb   T_pb    0      0             ]/Iz];                  % alphaz
+     [0      0      0      0     T_l    T_r            ]/Ix;          ... % alphax
+     [T_sf  T_pf   T_sb   T_pb    0      0             ]/Iz];             % alphaz
  
 
-%%Removing Gravity and Buoyancy as input forces. Will assume that sub will
-%%be trimmed enough that theta_0 ~= 0 and will treat buoyancy/weight
-%%differential as a disturbance force <- controller should naturally
-%%account for this disturbance as it tries to maintain it's target state
-%  %     PWMs   PWMp   PWMr   PWMl    W     B
-% B = [[0      0      0      0       0     0   ];                  ... % vx
-%      [0      0      0      0       0     0   ];                  ... % vy
-%      [0      0      0      0       0     0   ];                  ... % vz
-%      [0      0      0      0       0     0   ];                  ... % wx
-%      [0      0      0      0       0     0   ];                  ... % wy
-%      [0      0      0      0       0     0   ];                  ... % wz
-%      [1      1      0      0       0     0   ]*K2_F/m;           ... % ax
-%      [0      0      Y     -Y       0     0   ]/m;                ... % ay
-%      [0      0      Y      Y      -1     1   ]/m;                ... % az
-%      [K2_T  -K2_T  -kappa  kappa  -beta  beta]/Ix;               ... % alphax
-%      [zu     zu     nu     nu     -rho   rho ]/Iy;               ... % alphay
-%      [yu    -yu     nu    -nu      0     0   ]/Iz];                  % alphaz
  
 % y = Cx + Du
-C = [[0  0   0   0   0   0   1   0   0   0   0   0];
-     [0  0   0   0   0   0   0   1   0   0   0   0];
-     [0  0   1   0   0   0   0   0   0   0   0   0];
-     [0  0   0   0   0   0   0   0   0   1   0   0];
-     [0  0   0   0   0   0   0   0   0   0   1   0];
-     [0  0   0   0   0   0   0   0   0   0   0   1]];
+%     z  tx  tz  vx  vy  vz  wx   wz
+C = [[0   0   0   1   0   0   0   0];
+     [0   0   0   0   1   0   0   0];
+     [1   0   0   0   0   0   0   0];
+     [0   0   0   0   0   0   1   0];
+     [0   0   0   0   0   0   0   0];
+     [0   0   0   0   0   0   0   1]];
  
  D = zeros(6,6);
  
 
+%% Servo Control 
+Aaug = [A zeros(size(A,1),6);
+    -C zeros(size(C,1))]
+Baug = [B; zeros(size(B,2))]
+polevec = [-1 -2 -3 -4 -8 -10 -20 -30 -40 -50 -60 -55 -65 -75]; % [INPUT 1-BY-14 VECTOR HERE];
+Kaug = place(Aaug,Baug,polevec);
+K = Kaug(1:8); Ka = Kaug(9:14);
  
 %% LQI
-%Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
-%Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
-%Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 46 72 8 3 3 30]*1);  
-Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1);  
-R = diag([1 1 1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
-%Q = 3*eye(18);
-%R = eye(4);
-N = eye(18,6)*1;
-%N = zeros(18,4); %default lqi
-% eig([Q N;N' R])
-sys = ss(A,B,C,D);
-Ts = 0.04;
-sys = c2d(sys,Ts);
-
-% Minimum realization
-[Gmin,P] = minreal(sys);
-rank(ctrb(Gmin.a, Gmin.b))
-rank(obsv(Gmin.a, Gmin.c))
-
-% Lyapunov Equation
-% lyapunov = dlyap(Gmin.a,Gmin.b,Gmin.c)
-
-%A = (A -B*k);
-eig([Q N;N' R])
-[K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
-
-
-% Simulink Model
-%  Q = 0;
-%  for test = 1:18    
-%   Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1); 
-%  meme = 1;
-%  for c =1 :100
-%     Q(test,test) = c;
-%     try
-%        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
-%     catch 
-%         a = "did not work"
-%         continue
-%     end
-%     QQ(meme,test) = c;
-%     meme = meme +1;
-%  end
-%  
-%  end
- 
+% %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
+% %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
+% %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 46 72 8 3 3 30]*1);  
+% Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1);  
+% R = diag([1 1 1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
+% %Q = 3*eye(18);
+% %R = eye(4);
+% N = eye(18,6)*1;
+% %N = zeros(18,4); %default lqi
+% % eig([Q N;N' R])
+% sys = ss(A,B,C,D);
+% Ts = 0.04;
+% sys = c2d(sys,Ts);
 % 
+% % Minimum realization
+% [Gmin,P] = minreal(sys);
+% rank(ctrb(Gmin.a, Gmin.b))
+% rank(obsv(Gmin.a, Gmin.c))
+% 
+% % Lyapunov Equation
+% % lyapunov = dlyap(Gmin.a,Gmin.b,Gmin.c)
+% 
+% %A = (A -B*k);
+% eig([Q N;N' R])
+% [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R);
+% 
+% 
+% % Simulink Model
+% %  Q = 0;
+% %  for test = 1:18    
+% %   Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 44 76 7 3 3 30]*1); 
+% %  meme = 1;
+% %  for c =1 :100
+% %     Q(test,test) = c;
+% %     try
+% %        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
+% %     catch 
+% %         a = "did not work"
+% %         continue
+% %     end
+% %     QQ(meme,test) = c;
+% %     meme = meme +1;
+% %  end
+% %  
+% %  end
 %  
-%
-% RR = 0
-%  for test = 1:4    
-%  R = diag([1 100 1 1]);
-%  meme = 1;
-%  for c =1 :100
-%     R(test,test) = c
-%     try
-%        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
-%     catch 
-%         a = "did not work"
-%         continue
-%     end
-%     RR(meme,test) = c;
-%     meme = meme +1;
-%  end
+% % 
+% %  
+% %
+% % RR = 0
+% %  for test = 1:4    
+% %  R = diag([1 100 1 1]);
+% %  meme = 1;
+% %  for c =1 :100
+% %     R(test,test) = c
+% %     try
+% %        [K,S,E] = lqi(sys,Q,R,N);%lqr(A,B,Q,R)
+% %     catch 
+% %         a = "did not work"
+% %         continue
+% %     end
+% %     RR(meme,test) = c;
+% %     meme = meme +1;
+% %  end
+% %  
+% %  end
 %  
-%  end
- 
- 
- 
- %K=0.1*ones(4,18);%temp standin
- stepinput = [0 0 0 0 0 1];
- sim('model_sim')
+%  
+%  
+%  %K=0.1*ones(4,18);%temp standin
+%  stepinput = [0 0 0 0 0 1];
+%  sim('model_sim')
  
