@@ -53,7 +53,7 @@ filename = 'parameters2.xlsx';
 rho = 1000;
 g = -9.81; %m/s^2
 sheet = 1;
-xlRange = 'D1:D42';
+xlRange = 'D1:D45';
 parameters = xlsread(filename,sheet,xlRange);
 
 
@@ -128,22 +128,21 @@ V_Rx = Dim_x*((0.5*(Dim_y+Dim_z))^2);
 Ratio_x = Ap_x/(Dim_y*Dim_z);
 Ma_x = rho*C_Ax*V_Rx*Ratio_x;
 
+Ma_x = parameters(43);
+Ma_y = parameters(44);
+Ma_z = parameters(45);
+
 M_x = Ma_x + m;
 M_y = Ma_y + m;
 M_z = Ma_z + m;
-B_x = 0.3;
-B_y = 0.3;
-B_z = 0.3;
 
-%% PID System Analysis
+% Load friction coefficients (Linearized around 0.3m/s, 10deg/s)
+B_x = -60.0646;
+B_y = -51.4433;
+B_z = -64.8841;
+B_tx = -37.7409;
+B_tz = -29.9229;
 
-s = tf('s');
-G_x = 1/(M_x*s+B_x);
-C_x = 1000 + 5/s;
-G_ol = C_x*G_x;
-
-bode(G_ol);
-margin(G_ol)
 
 %% Force Balance Equations written in plain text
 
@@ -210,14 +209,15 @@ d_r_M = sqrt(COM(x)^2+COM(z)^2); % distance between origin and COM in Right Plan
 % y = [vx, vy, vz, wx, wy, wz]
 % dx/dt = Ax + Bu
 %        z   tx                   tz  vx          vy          vz          wx       wz
-A = [[   0   0                     0   0           0           1           0       0];     ... % vz
-     [   0   0                     0   0           0           0           1       0];     ... % wx
-     [   0   0                     0   0           0           0           0       1];     ... % wz
-     [   0   0                     0   -bx         0           0           0       0]/m;   ... % ax
-     [   0   0                     0   0          -by          0           0       0]/m;   ... % ay
-     [   0   0                     0   0           0          -bz          0       0]/m;   ... % az
-     [   0  -B*d_f_B+W*d_f_M       0   0          -by*COPy(z)  bz*COPz(y) -cx      0]/Ix;  ... % alphax
-     [   0   0                     0  -bx*COPx(y)  by*COPy(z)  0           0     -cz]/Iz];    % alphaz
+% A = [[   0   0                     0   0           0           1           0       0];     ... % vz
+%      [   0   0                     0   0           0           0           1       0];     ... % wx
+%      [   0   0                     0   0           0           0           0       1];     ... % wz
+%      [   0   0                     0   -bx         0           0           0       0]/m;   ... % ax
+%      [   0   0                     0   0          -by          0           0       0]/m;   ... % ay
+%      [   0   0                     0   0           0          -bz          0       0]/m;   ... % az
+%      [   0  -B*d_f_B+W*d_f_M       0   0          -by*COPy(z)  bz*COPz(y) -cx      0]/Ix;  ... % alphax
+%      [   0   0                     0  -bx*COPx(y)  by*COPy(z)  0           0     -cz]/Iz];    % alphaz
+
 
 %% Thruster (B) Matrix
 
@@ -287,6 +287,51 @@ C = [[0   0   0   1   0   0   0   0];
  D = zeros(6,6);
  
 
+ %% Reduced State Model
+%  A = [[   0   0                     0   -bx         0           0           0       0]/m;   ... % ax
+%      [   0   0                     0   0          -by          0           0       0]/m;   ... % ay
+%      [   0   0                     0   0           0          -bz          0       0]/m;   ... % az
+%      [   0  -B*d_f_B+W*d_f_M       0   0          -by*COPy(z)  bz*COPz(y) -cx      0]/Ix;  ... % alphax
+%      [   0   0                     0  -bx*COPx(y)  by*COPy(z)  0           0     -cz]/Iz];    % alphaz
+
+I_x = Ix;
+I_y = Iy;
+I_z = Iz;
+
+A = zeros(5,5);
+A(1,1) = B_x/(m+Ma_x);
+A(2,2) = B_y/(m+Ma_y);
+A(3,3) = B_z/(m+Ma_z);
+A(4,4) = B_tx/(I_x);
+A(5,5) = B_tz/(I_z);
+
+L_diags = 0.48; 
+L_sides = 0.21;
+
+B = zeros(5,6); 
+B(1,:) = [cosd(45) cosd(45) cosd(45) cosd(45) 0 0];
+B(2,:) = [cosd(45) -cosd(45) -cosd(45) cosd(45) 0 0];
+B(3,:) = [ 0 0 0 0 1 1];
+B(4,:) = [ 0 0 0 0 L_sides -L_sides];
+B(5,:) = [L_diags -L_diags L_diags -L_diags 0 0];
+B_inv = pinv(B);
+
+C = eye(5);
+
+% Discretization
+% sys = ss(A,B,C,0);
+% Ts = 0.02;
+% sysd = c2d(sys, Ts);
+% 
+% Ad = sysd.A;
+% Bd = sysd.B;
+% Cd = sysd.C;
+% 
+% % Set A, B, C to Discrete version (For Simulink)
+% A = Ad
+% B = Bd
+% C = Cd
+
 %% Servo Control 
 % Aaug = [A zeros(size(A,1),6);
 %     -C zeros(size(C,1))]
@@ -295,7 +340,63 @@ C = [[0   0   0   1   0   0   0   0];
 % Kaug = place(Aaug,Baug,polevec);
 % K = Kaug(1:8); Ka = Kaug(9:14);
 % return; % Comment out if using LQR
- 
+return; % Comment out if using LQR
+
+
+%% Servo Control with Reduced States
+
+regen_gain = true;
+
+if(regen_gain)
+    Aaug = [A zeros(size(A,1),5);
+        -C zeros(size(C,1))]
+    Baug = zeros(10,6);
+    Baug(1:5,:) = B;
+    Baug(6:10,:) = 0;
+    
+    % Continuous Case
+    pole_offset = -13;
+    polevec = [ pole_offset  , pole_offset-1, pole_offset-2, pole_offset-3, pole_offset-4, ...
+                pole_offset-6, pole_offset-7, pole_offset-8, pole_offset-9, pole_offset-10 ]; % [INPUT 1-BY-14 VECTOR HERE];
+
+
+    % Discrete Case
+%     pole_offset = -0.05;
+%     polevec = [ pole_offset  , pole_offset-0.001, pole_offset-0.002, pole_offset-0.003, pole_offset-0.004, ...
+%                 pole_offset-0.006, pole_offset-0.007, pole_offset-0.008, pole_offset-0.009, pole_offset-0.010 ]; % [INPUT 1-BY-14 VECTOR HERE];
+
+    Kaug = place(Aaug,Baug,polevec);
+    K = Kaug(:,1:5); Ka = Kaug(:,6:10); % dimensions of K and Ka?
+    sim('Servo_Control');
+end
+
+% Plot States
+close all;
+figure(); hold on;
+plot(simout.Time, simout.Data(:,1));
+plot(simout.Time, simout.Data(:,2));
+plot(simout.Time, simout.Data(:,3));
+plot(simout.Time, simout.Data(:,4));
+plot(simout.Time, simout.Data(:,5));
+xlabel('Time');
+legend('vx','vy','vz','vtx','vtz');
+stepdata = stepinfo(simout.Data(:,1), simout.Time)
+
+% Plot Thruster Inputs % u = [sf, pf, sb, pb, l, r]
+figure(); hold on;
+plot(inputout.Time, inputout.Data(:,1));
+plot(inputout.Time, inputout.Data(:,2));
+plot(inputout.Time, inputout.Data(:,3));
+plot(inputout.Time, inputout.Data(:,4));
+plot(inputout.Time, inputout.Data(:,5));
+plot(inputout.Time, inputout.Data(:,6));
+title('Motor Thrusts');
+ylabel('Force (N)');
+xlabel('Time (s)');
+legend('sf','pf','sb', 'pb', 'L', 'R');
+
+return
+
 %% LQI
 % %Q = diag([9 3 3 3 3 3 3 3 3 3 3 3 2 3 9 3 3 3]*1);         % increases penalty as value increases, reaches target position/velocity quicker
 % %Q = diag([3 3 3 3 3 3 3 3 3 3 3 3 94 3 3 3 3 84]*1);  
@@ -330,6 +431,7 @@ C = [[0   0   0   1   0   0   0   0];
 Q = diag([3 3 3 3 3 3 3 3]*1);  
 % Q = zeros(14,14);
 R = diag([1 1 1 1 1 1]);                                 % As value cost of input reduces. e.g if 1st coefficient increases, the T100 magnitude reduces
+
 %Q = 3*eye(18);
 %R = eye(4);
 N = eye(13,6)*1;
