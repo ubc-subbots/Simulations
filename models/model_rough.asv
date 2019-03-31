@@ -143,19 +143,14 @@ sys = ss(A,B,C,D);
 %% Observer Design
 
 close all;
-base = -40;
+base = -25;
 Obspolevec = [base base-0.1 base-0.2 base-0.3 base-0.4]; % [INPUT 1-BY-4 VECTOR HERE];
 L = place(A',C',Obspolevec)';
 
 noise_mu = 0;
 noise_sig = 0.05; % Nirmal et al 2016 for MPU6050
-noise_var = noise_sig^2;
 time = (0:0.001:1);
-noise = noise_sig*randn(length(time)) + noise_mu;
-
-% Kalman
-kalman_gain = load('kalman_gain');
-L = A*kalman_gain.K_ss;
+noise = randn+ randn(
 %% PID Block Diagram
 M_x = m + Ma_x;
 M_y = m + Ma_y;

@@ -308,6 +308,7 @@ A(5,5) = B_tz/(I_z);
 L_diags = 0.48; 
 L_sides = 0.21;
 
+% TODO - INERTIA!
 B = zeros(5,6); 
 B(1,:) = [cosd(45) cosd(45) cosd(45) cosd(45) 0 0];
 B(2,:) = [cosd(45) -cosd(45) -cosd(45) cosd(45) 0 0];
